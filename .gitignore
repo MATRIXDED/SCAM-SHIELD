@@ -1,6 +1,47 @@
+# ── Python ───────────────────────────────────────────────────────────────────
 .venv/
 **/.venv/
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Database files ────────────────────────────────────────────────────────────
 *.db
+*.sqlite
+*.sqlite3
+
+# ── Environment / secrets ────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ── Node / Frontend ──────────────────────────────────────────────────────────
+node_modules/
+**/node_modules/
+frontend/dist/
+frontend/.cache/
+frontend/src/backup/
+.cache/
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+*.tmp
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
