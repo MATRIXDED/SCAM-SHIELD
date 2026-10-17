@@ -204,6 +204,24 @@ _SCHEMA_STATEMENTS = [
     )
     """,
 
+    # ── scam_scans (ScamShield Telemetry & History) ───────────────────────────
+    # Privacy-conscious scan records.
+    # CRITICAL: We NEVER store the raw message text.
+    # Only the SHA-256 fingerprint, risk scoring, category indicators, and preview size.
+    """
+    CREATE TABLE IF NOT EXISTS scam_scans (
+        id             TEXT    PRIMARY KEY,
+        fingerprint    TEXT    NOT NULL,
+        risk_score     INTEGER NOT NULL,
+        risk_level     TEXT    NOT NULL,
+        channel        TEXT    NOT NULL DEFAULT 'sms',
+        preview_length INTEGER NOT NULL,
+        warning_count  INTEGER NOT NULL DEFAULT 0,
+        metadata_json  TEXT,
+        created_at     TEXT    NOT NULL
+    )
+    """,
+
     # ── Indexes ───────────────────────────────────────────────────────────────
     # Indexes are separate CREATE statements because CREATE TABLE IF NOT EXISTS
     # does not update indexes if the table already exists.
@@ -220,6 +238,10 @@ _SCHEMA_STATEMENTS = [
     # "Show me recent history for task X" — used by the activity timeline.
     "CREATE INDEX IF NOT EXISTS idx_history_entity  ON action_history(entity_id, entity_type)",
     "CREATE INDEX IF NOT EXISTS idx_history_created ON action_history(created_at)",
+
+    # ScamShield lookup indexes
+    "CREATE INDEX IF NOT EXISTS idx_scam_scans_fingerprint ON scam_scans(fingerprint)",
+    "CREATE INDEX IF NOT EXISTS idx_scam_scans_created     ON scam_scans(created_at)",
 ]
 
 
@@ -301,3 +323,58 @@ def init_db() -> None:
 def get_db_path() -> Path:
     """Return the absolute path to the database file. Used by tests."""
     return DB_PATH
+
+
+def record_scam_scan(
+    fingerprint: str,
+    risk_score: int,
+    risk_level: str,
+    channel: str,
+    preview_length: int,
+    warning_count: int,
+    metadata_json: str | None = None,
+) -> dict:
+    """
+    Store an anonymized scan result in the database.
+    Privacy rule: RAW MESSAGE CONTENT IS NEVER SAVED.
+    """
+    from uuid import uuid4
+    from datetime import datetime, timezone
+
+    scan_id = str(uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
+    with get_connection() as conn:
+        conn.execute("BEGIN")
+        try:
+            conn.execute(
+                """
+                INSERT INTO scam_scans
+                    (id, fingerprint, risk_score, risk_level, channel, preview_length, warning_count, metadata_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (scan_id, fingerprint, risk_score, risk_level, channel, preview_length, warning_count, metadata_json, now),
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+
+        row = conn.execute("SELECT * FROM scam_scans WHERE id = ?", (scan_id,)).fetchone()
+        return dict(row) if row else {}
+
+
+def get_scam_scans(limit: int = 50) -> list[dict]:
+    """Retrieve recent anonymized scan activity."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, fingerprint, risk_score, risk_level, channel, preview_length, warning_count, created_at
+            FROM scam_scans
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
