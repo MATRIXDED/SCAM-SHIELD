@@ -168,7 +168,8 @@ def detect_otp_signals(text: str) -> Tuple[bool, List[str], bool]:
         theft_flags.append("Direct request to reply with OTP code")
 
     # 2. Request to forward code
-    if re.search(r"(?i)\bforward\s+this\s+(?:code|otp|sms|message)\b", text):
+    if re.search(r"(?i)\bforward\s+(?:this\s+|the\s+)?(?:\d+[- ]digit\s+)?(?:code|otp|sms|message|passcode|authentication\s+code|verification\s+code)\b", text) or \
+       re.search(r"(?i)\bforward\s+.*?\b(?:code|otp|passcode|pin)\b", text):
         theft_flags.append("Request to forward secret verification code")
 
     # 3. Request to share code (ONLY if NOT preceded by defensive warnings 'do not' / 'never')
@@ -187,8 +188,8 @@ def detect_otp_signals(text: str) -> Tuple[bool, List[str], bool]:
         theft_flags.append("Credential entry solicitation on external URL")
 
     # 6. UPI PIN fraud (India: entering PIN to receive money)
-    if re.search(r"(?i)\benter\s+(?:your\s+)?upi\s*pin\s+.*?\b(?:receive|claim|accept|credit|get|release)\b", text) or \
-       re.search(r"(?i)\benter\s+(?:your\s+)?upi\s*pin\s+to\s+(?:receive|claim|accept|credit|get)\b", text):
+    if re.search(r"(?i)\b(?:enter|put|type|provide|input)\s+(?:your\s+)?(?:\d+[- ]digit\s+)?upi\s*pin\s+.*?\b(?:receive|claim|accept|credit|get|release)\b", text) or \
+       re.search(r"(?i)\b(?:enter|put|type|provide|input)\s+(?:your\s+)?(?:\d+[- ]digit\s+)?upi\s*pin\s+to\s+(?:receive|claim|accept|credit|get)\b", text):
         theft_flags.append("Severe fraud: Requesting UPI PIN to receive money (PINs only send money)")
 
     # Benign delivery check
@@ -207,7 +208,7 @@ PAYMENT_PATTERNS = [
     (r"(?i)\b(bitcoin|crypto|usdt|eth|btc|wallet\s+address)\b", "High risk: Cryptocurrency payment requested"),
     (r"(?i)\b(wire\s+transfer|western\s*union|moneygram)\b", "Untraceable wire transfer requested"),
     (r"(?i)\b(unpaid\s+invoice|pending\s+bill|overdue\s+payment|debt\s+collection)\b", "Unsolicited invoice or debt collection claim"),
-    (r"(?i)\b(clearance\s+fee|processing\s+fee\s+required|fee\s+to\s+release)\b", "Upfront fee requested to release funds"),
+    (r"(?i)\b(clearance\s+fee|processing\s+fee\s+required|fee\s+to\s+release|registration\s+fee)\b", "Upfront fee requested to release funds or begin service"),
     (r"(?i)\b(collect\s+request\s+of\s+(rs\.?|inr|\$)\s*\d+.*(?:approve|accept)\s+on\s+(phonepe|gpay|paytm))\b", "Deceptive UPI collect request lure"),
 ]
 
@@ -217,6 +218,7 @@ LURE_PATTERNS = [
     (r"(?i)\b(refund\s+of\s+(\$|rs\.?|inr|\£|\€)\s*\d+|overpaid|accidental\s+charge.*refund|reimbursement\s+pending)\b", "Unsolicited refund or overpayment lure"),
     (r"(?i)\b(unclaimed\s+package|package\s+pending\s+delivery|customs\s+fee\s+due|delivery\s+failed.*reschedule)\b", "Fake delivery package or customs fee lure"),
     (r"(?i)\b(inheritance|foreign\s+funds|beneficiary\s+of\s+(\$|rs\.?|\£)\s*\d+|next\s+of\s+kin)\b", "Inheritance / advance-fee fraud lure"),
+    (r"(?i)\b(earn\s+(\$|rs\.?|inr|\£|\€)\s*\d+.*(?:daily|from\s+home|per\s+day)|part[- ]time\s+task|youtube\s+video\s+liking\s+job)\b", "Part-time task / fake work-from-home lure"),
 ]
 
 # Regional Specific: India & Southeast Asia Acute Patterns
@@ -225,6 +227,7 @@ INDIA_REGIONAL_PATTERNS = [
     (r"(?i)\b(sbi|hdfc|icici|paytm|bank)\b.*\b(kyc\s+(expired|blocked|deactivated|suspended)|update\s+(pan|aadhaar))\b", "India: Bank KYC deactivation threat"),
     (r"(?i)\b(electricity\s+power\s+(will\s+be\s+)?disconnected\s+tonight|power\s+cut\s+at\s+9:30\s*pm)\b", "India: Electricity disconnection extortion scam"),
     (r"(?i)\b(install|download)\s+(anydesk|teamviewer|quicksupport|rustdesk|\.apk\b)\b", "Remote access tool or sideloaded APK installation solicitation"),
+    (r"(?i)\b(lines?\s+will\s+be\s+disconnected|money\s+laundering\s+activities|narcotics\s+parcel)\b", "India: Telecom disconnection or narcotics extortion threat"),
 ]
 
 # Suspicious Link Indicators
