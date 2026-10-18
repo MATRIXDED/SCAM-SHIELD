@@ -17,6 +17,7 @@ Tests:
 import unittest
 import sys
 import os
+import json
 import tempfile
 from pathlib import Path
 
@@ -586,8 +587,91 @@ class ScamShieldPhase2SecurityTests(unittest.TestCase):
         self.assertEqual(res_steps.json(), SAFE_NEXT_STEPS_DATA)
 
 
+class ScamShieldPhase3McpTests(unittest.TestCase):
+    """
+    Phase 3 MCP & Alexa+ Assistant Readiness:
+    - Protocol negotiation (initialize, protocolVersion 2024-11-05)
+    - Notification handling (no response for notifications/initialized)
+    - Tool manifest matching shared constants
+    - Voice summary formatting (never reads codes, never claims 100% safe)
+    - Structured tool execution errors
+    """
+
+    def setUp(self):
+        mcp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "mcp_server"))
+        if mcp_dir not in sys.path:
+            sys.path.insert(0, mcp_dir)
+        import server as mcp_server
+        self.mcp = mcp_server
+
+    def test_34_mcp_initialize_negotiation(self):
+        """MCP initialize returns protocolVersion 2024-11-05 and serverInfo."""
+        req = {"jsonrpc": "2.0", "id": "init-1", "method": "initialize", "params": {}}
+        res = self.mcp.process_json_rpc(req)
+        self.assertEqual(res["jsonrpc"], "2.0")
+        self.assertEqual(res["id"], "init-1")
+        self.assertEqual(res["result"]["protocolVersion"], "2024-11-05")
+        self.assertIn("tools", res["result"]["capabilities"])
+
+    def test_35_mcp_notification_handling(self):
+        """MCP notifications (no id) are processed and return None without crashing."""
+        req = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
+        res = self.mcp.process_json_rpc(req)
+        self.assertIsNone(res)
+
+    def test_36_mcp_tools_list_shared_constants(self):
+        """MCP tools/list returns exactly the tools defined in shared_constants."""
+        from shared_constants import MCP_TOOLS_MANIFEST
+        req = {"jsonrpc": "2.0", "id": "list-1", "method": "tools/list", "params": {}}
+        res = self.mcp.process_json_rpc(req)
+        tools = res["result"]["tools"]
+        self.assertEqual(len(tools), len(MCP_TOOLS_MANIFEST))
+        names = [t["name"] for t in tools]
+        self.assertIn("analyze_suspicious_message", names)
+        self.assertIn("get_safe_next_steps", names)
+        self.assertIn("get_sample_threat_cases", names)
+
+    def test_37_mcp_tool_execution_with_voice_summary(self):
+        """MCP tool call returns structured output including voice_summary."""
+        req = {
+            "jsonrpc": "2.0",
+            "id": "call-1",
+            "method": "tools/call",
+            "params": {
+                "name": "analyze_suspicious_message",
+                "arguments": {
+                    "message": "AMAZON ALERT: Your account is suspended. Confirm billing at http://amz-fake.xyz",
+                    "channel": "sms",
+                },
+            },
+        }
+        res = self.mcp.process_json_rpc(req)
+        self.assertFalse(res["result"]["isError"])
+        content_json = json.loads(res["result"]["content"][0]["text"])
+        self.assertIn("voice_summary", content_json)
+        self.assertIn("risk_level", content_json)
+        # Voice summary must not claim 100% safe
+        self.assertNotIn("100% safe", content_json["voice_summary"].lower())
+
+    def test_38_mcp_tool_argument_validation_error(self):
+        """MCP tool call with missing arguments returns structured isError: True."""
+        req = {
+            "jsonrpc": "2.0",
+            "id": "call-err",
+            "method": "tools/call",
+            "params": {
+                "name": "analyze_suspicious_message",
+                "arguments": {"message": ""},
+            },
+        }
+        res = self.mcp.process_json_rpc(req)
+        self.assertTrue(res["result"]["isError"])
+        self.assertIn("Missing or empty 'message'", res["result"]["content"][0]["text"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
