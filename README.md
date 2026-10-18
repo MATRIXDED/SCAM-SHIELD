@@ -282,7 +282,7 @@ Metrics reported: **Accuracy, Precision, Recall, F1 Score, FPR, FNR** — comput
 | False Positive Rate | 0% |
 | False Negative Rate | 0% |
 
-> **Note:** These metrics reflect the current 26-case dataset. Real-world performance will vary. The dataset intentionally excludes ambiguous edge cases to maintain labeled ground truth integrity.
+> **Disclaimer:** These metrics reflect evaluation strictly on the curated 26-case test dataset, not proof or guarantee of real-world accuracy across open-domain threat traffic. Real-world performance will vary based on novel social engineering techniques, adversarial evasion, and evolving threat distributions.
 
 ---
 

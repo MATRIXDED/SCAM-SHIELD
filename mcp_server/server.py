@@ -54,6 +54,13 @@ except ImportError:
     from backend.analyzer import analyze_message
     from backend.shared_constants import SAMPLE_CASES, SAFE_NEXT_STEPS_DATA, MCP_TOOLS_MANIFEST
 
+# MCP Protocol Version Negotiation Constants
+try:
+    from mcp.types import LATEST_PROTOCOL_VERSION, DEFAULT_NEGOTIATED_VERSION
+except ImportError:
+    LATEST_PROTOCOL_VERSION = "2026-07-28"
+    DEFAULT_NEGOTIATED_VERSION = "2025-03-26"
+
 
 def build_voice_summary(result: Dict[str, Any]) -> str:
     """
@@ -125,7 +132,8 @@ def handle_get_safe_next_steps(args: Dict[str, Any]) -> Dict[str, Any]:
         "reporting_resources": SAFE_NEXT_STEPS_DATA["reporting_resources"],
         "voice_summary": (
             "Emergency safety guidance: If you disclosed banking credentials or OTPs, "
-            "contact your financial institution immediately. Forward spam SMS to 7726 or report to official cyber crime portals."
+            "contact your financial institution immediately. In India, call 1930 for cyber fraud. "
+            "Forward spam SMS to 7726 or report to official cyber crime portals."
         ),
         "disclaimer": "ScamShield provides defensive heuristics. Always verify independently through trusted official channels.",
     }
@@ -224,11 +232,30 @@ def process_json_rpc(request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
     if method == "initialize":
+        requested_version = params.get("protocolVersion")
+        # MCP Protocol Version Negotiation:
+        # - LATEST_PROTOCOL_VERSION ("2026-07-28" in newer official Python MCP SDK)
+        # - DEFAULT_NEGOTIATED_VERSION ("2025-03-26")
+        # - "2024-11-05" (Standard baseline for Anthropic Claude Desktop & early Hackathon runners)
+        supported_versions = {
+            LATEST_PROTOCOL_VERSION,
+            DEFAULT_NEGOTIATED_VERSION,
+            "2024-11-05",
+        }
+        if requested_version and requested_version in supported_versions:
+            negotiated_version = requested_version
+        elif requested_version:
+            # Client requested a specific unknown version; negotiate with SDK latest
+            negotiated_version = LATEST_PROTOCOL_VERSION
+        else:
+            # Unspecified version: default to 2024-11-05 for backwards compatibility
+            negotiated_version = "2024-11-05"
+
         return {
             "jsonrpc": "2.0",
             "id": rpc_id,
             "result": {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": negotiated_version,
                 "serverInfo": {
                     "name": "scamshield-mcp-server",
                     "version": "2.0.0",
@@ -330,12 +357,15 @@ def run_cli_test():
     print("ScamShield MCP Server Self-Test (Amazon Alexa+ / Assistant Track)")
     print("=" * 70)
 
-    # 1. Initialize
-    init_req = {"jsonrpc": "2.0", "id": "1", "method": "initialize", "params": {}}
-    init_res = process_json_rpc(init_req)
+    # 1. Initialize (testing both default backwards-compat and explicit SDK negotiation)
+    init_req_default = {"jsonrpc": "2.0", "id": "1", "method": "initialize", "params": {}}
+    init_res_default = process_json_rpc(init_req_default)
+    init_req_sdk = {"jsonrpc": "2.0", "id": "1b", "method": "initialize", "params": {"protocolVersion": LATEST_PROTOCOL_VERSION}}
+    init_res_sdk = process_json_rpc(init_req_sdk)
     print("\n[1] initialize result:")
-    print("    Protocol Version:", init_res["result"]["protocolVersion"])
-    print("    Server Info:", init_res["result"]["serverInfo"])
+    print("    Baseline Protocol Version:", init_res_default["result"]["protocolVersion"])
+    print(f"    Negotiated SDK Latest ({LATEST_PROTOCOL_VERSION}):", init_res_sdk["result"]["protocolVersion"])
+    print("    Server Info:", init_res_default["result"]["serverInfo"])
 
     # 2. Notification (no response expected)
     notif_req = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}

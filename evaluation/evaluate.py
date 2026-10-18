@@ -100,19 +100,24 @@ def evaluate(dataset_path: str, threshold: int = 30, verbose: bool = False) -> d
     fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
 
     print("--------------------------------------------------------")
-    print(" Performance Metrics Summary")
+    print(f" Performance Metrics Summary ({total}-Case Benchmark Dataset)")
     print("--------------------------------------------------------")
     print(f" Total Evaluated Cases : {total}")
     print(f" True Positives (TP)   : {tp}")
     print(f" True Negatives (TN)   : {tn}")
     print(f" False Positives (FP)  : {fp}")
     print(f" False Negatives (FN)  : {fn}")
-    print(f" Accuracy              : {accuracy:.4f} ({accuracy * 100:.1f}%)")
-    print(f" Precision             : {precision:.4f} ({precision * 100:.1f}%)")
-    print(f" Recall                : {recall:.4f} ({recall * 100:.1f}%)")
+    print(f" Dataset Accuracy      : {accuracy:.4f} ({accuracy * 100:.1f}%)")
+    print(f" Dataset Precision     : {precision:.4f} ({precision * 100:.1f}%)")
+    print(f" Dataset Recall        : {recall:.4f} ({recall * 100:.1f}%)")
     print(f" F1 Score              : {f1:.4f}")
     print(f" False Positive Rate   : {fpr:.4f} ({fpr * 100:.1f}%)")
     print(f" False Negative Rate   : {fnr:.4f} ({fnr * 100:.1f}%)")
+    print("--------------------------------------------------------")
+    print(" Notice: These metrics reflect evaluation strictly on the")
+    print(f" curated {total}-case benchmark dataset and do NOT prove or")
+    print(" guarantee generalized real-world accuracy across open-domain")
+    print(" threat distributions.")
     print("--------------------------------------------------------\n")
 
     return {

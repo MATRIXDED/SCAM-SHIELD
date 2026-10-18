@@ -16,10 +16,17 @@ Security & Architecture:
 
 import time
 import logging
+import sys
+import os
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
 from datetime import datetime, timezone
+
+# Ensure backend directory is in sys.path for root-level or package-level execution
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 
 from fastapi import FastAPI, HTTPException, Request, Header, status
 from fastapi.middleware.cors import CORSMiddleware

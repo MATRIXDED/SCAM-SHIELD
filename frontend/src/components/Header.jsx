@@ -45,12 +45,12 @@ export default function Header({ activeTab, setActiveTab, backendStatus }) {
         )}
 
         <a
-          href="tel:18773824357"
+          href="tel:1930"
           className="helpline-link"
-          title="Direct verified consumer helpline: FTC Fraud Desk 1-877-382-4357"
+          title="Official India National Cyber Financial Fraud Helpline (24/7): Dial 1930"
         >
           <span className="material-symbols-outlined text-[16px]">call</span>
-          <span>1-877-FTC-HELP</span>
+          <span>India Cyber Helpline: 1930</span>
         </a>
 
         <div

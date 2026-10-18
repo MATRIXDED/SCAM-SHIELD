@@ -418,7 +418,11 @@ export default function SafetyGuideView() {
                   CHECKLIST STATUS
                 </p>
                 <p style={{ fontSize: '0.9rem', fontWeight: 700, color: completedSteps === 5 ? 'var(--teal-secondary)' : 'var(--forest-primary)' }}>
-                  {completedSteps === 0 ? 'Triage Ready' : completedSteps === 5 ? 'Fully Protected' : `${progressPercent}% Secured`}
+                  {completedSteps === 0
+                    ? 'Triage Ready'
+                    : completedSteps === 5
+                    ? 'Initial Triage Complete — Continued Vigilance Advised'
+                    : `${completedSteps} of 5 Steps Logged (${progressPercent}%)`}
                 </p>
               </div>
             </div>
@@ -430,27 +434,27 @@ export default function SafetyGuideView() {
               {
                 time: 'T + 0 Minutes',
                 title: 'Step 1: Sever Communication Instantly',
-                desc: 'Hang up immediately. Block the phone number. Close chat sessions. If they instructed you to install remote software (e.g., AnyDesk, TeamViewer), disconnect your Wi-Fi or turn off your device.',
+                desc: 'Hang up immediately. Block the phone number. Close chat sessions. If instructed to install remote software (e.g., AnyDesk, TeamViewer), disconnect your Wi-Fi or turn off your device immediately.',
               },
               {
                 time: 'T + 2 Minutes',
-                title: 'Step 2: Lock Compromised Cards via App',
-                desc: 'Open your verified banking app and toggle the "Lock / Freeze Card" switch for any debit or credit accounts mentioned. This prevents pending authorizations immediately.',
+                title: 'Step 2: Lock Compromised Cards & Freeze UPI',
+                desc: 'Open your banking or UPI app and toggle the "Lock / Freeze Card" switch. For unauthorized UPI transfers in India, dial 1930 immediately to trigger an interbank freeze.',
               },
               {
                 time: 'T + 5 Minutes',
                 title: 'Step 3: Update Core Passwords from a Clean Device',
-                desc: 'Using a separate phone or family computer, change the master password for your primary email and bank portal. Sign out of all active remote web sessions.',
+                desc: 'Using a separate phone or clean computer, change the master password for your primary email, banking portal, and UPI accounts. Sign out of all active remote web sessions.',
               },
               {
                 time: 'T + 30 Minutes',
-                title: 'Step 4: File Reports with Official Regulatory Agencies',
-                desc: 'Submit fraud details directly to IdentityTheft.gov and ReportFraud.ftc.gov. These reports establish an official legal affidavit used to contest fraudulent debt.',
+                title: 'Step 4: File Reports with Official Cybercrime Portals',
+                desc: 'In India: Register an official complaint on cybercrime.gov.in. In the US: File with IdentityTheft.gov and ReportFraud.ftc.gov to establish an official legal affidavit.',
               },
               {
                 time: 'Essential Care',
                 title: 'Step 5: Talk with Someone You Trust',
-                desc: 'Social isolation helps scammers. Call a trusted child, sibling, friend, or advocate. Sharing what took place reduces stress and breaks the psychological hold.',
+                desc: 'Social isolation helps scammers. Call a trusted family member, colleague, or advocate. Sharing what took place reduces stress and breaks the psychological hold.',
               },
             ].map((step, idx) => (
               <label
@@ -485,15 +489,15 @@ export default function SafetyGuideView() {
           </div>
         </section>
 
-        {/* Verified Contact Directory */}
+        {/* Verified Emergency Contact Directory (India Primary, US Clearly Labeled) */}
         <section style={{ marginBottom: '48px' }} aria-label="Official Emergency Directory">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
             <div>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--teal-secondary)' }}>
-                OFFICIAL DIRECTORY
+                PRIMARY REGION: INDIA • EMERGENCY DIRECTORY
               </span>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--forest-primary)' }}>
-                Emergency Verified Contacts
+                Emergency Verified Contacts &amp; Portals
               </h2>
             </div>
             <span style={{
@@ -508,75 +512,15 @@ export default function SafetyGuideView() {
               fontWeight: 600,
             }}>
               <span className="material-symbols-outlined text-[16px]">verified</span>
-              Vetted &amp; Direct Numbers
+              Official Verified Sources
             </span>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--ink-secondary)', marginBottom: '24px' }}>
-            Do not rely on web search advertisements for phone numbers. Use these verified consumer lines directly.
+            Do not rely on web search advertisements for helpline numbers. Use these verified consumer lines and official government reporting portals directly.
           </p>
 
           <div className="contacts-directory-grid">
-            {/* Major Banking Institutions Fraud Hub */}
-            <div className="directory-hub-card">
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--surface-high)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--forest-primary)',
-                  }}>
-                    <span className="material-symbols-outlined text-[24px]">account_balance</span>
-                  </div>
-                  <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
-                      Tier-1 Banking Fraud Desks
-                    </h3>
-                    <p style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>Available 24 hours / 7 days</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[
-                    { bank: 'JPMorgan Chase', dept: 'Card & Account Fraud Department', phone: '1-800-935-9935', tel: '18009359935' },
-                    { bank: 'Bank of America', dept: 'Fraud Prevention & Claims', phone: '1-800-432-1000', tel: '18004321000' },
-                    { bank: 'Wells Fargo', dept: 'Identity Fraud Escalation', phone: '1-800-869-3557', tel: '18008693557' },
-                    { bank: 'Citibank', dept: 'Security & Suspicious Transfers', phone: '1-800-950-5114', tel: '18009505114' },
-                  ].map((b) => (
-                    <div key={b.bank} className="directory-item-row">
-                      <div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>{b.bank}</div>
-                        <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>{b.dept}</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
-                          {b.phone}
-                        </span>
-                        <a
-                          href={`tel:${b.tel}`}
-                          className="directory-call-btn"
-                          title={`Call ${b.bank} fraud department`}
-                          aria-label={`Call ${b.bank} fraud department`}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">call</span>
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginTop: '16px', padding: '10px 14px', background: 'var(--surface-low)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                <span style={{ color: 'var(--ink-secondary)' }}>Using a regional credit union?</span>
-                <span style={{ color: 'var(--teal-secondary)', fontWeight: 600 }}>Inspect back of your plastic debit card</span>
-              </div>
-            </div>
-
-            {/* Official Federal Regulatory & Advocacy Agencies */}
+            {/* Primary: India National Cyber Crime & Regulatory Portals */}
             <div className="directory-hub-card">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
@@ -594,27 +538,27 @@ export default function SafetyGuideView() {
                   </div>
                   <div>
                     <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
-                      Official Reporting Agencies
+                      India National Portals &amp; Helplines (Primary)
                     </h3>
-                    <p style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>Federal consumer protection &amp; advocacy</p>
+                    <p style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>Official Government of India reporting channels</p>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div className="directory-item-row">
                     <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>Federal Trade Commission (FTC)</div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Civil fraud reporting and remediation</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>National Cyber Crime Helpline (I4C / MHA)</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>24/7 Financial Cyber Fraud Quick Freeze</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
-                        1-877-FTC-HELP
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--forest-primary)' }}>
+                        1930
                       </span>
                       <a
-                        href="tel:18773824357"
+                        href="tel:1930"
                         className="directory-call-btn"
-                        title="Call FTC hotline"
-                        aria-label="Call FTC hotline"
+                        title="Call National Cyber Financial Fraud Helpline: 1930"
+                        aria-label="Call National Cyber Financial Fraud Helpline: 1930"
                       >
                         <span className="material-symbols-outlined text-[18px]">call</span>
                       </a>
@@ -623,53 +567,11 @@ export default function SafetyGuideView() {
 
                   <div className="directory-item-row">
                     <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>FBI Internet Crime Complaint Center (IC3)</div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Wire fraud, ransomware &amp; cybercrime</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>National Cyber Crime Reporting Portal</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>File formal cybercrime complaints online</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--teal-secondary)' }}>
-                        ic3.gov
-                      </span>
-                      <a
-                        href="https://www.ic3.gov"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="directory-call-btn"
-                        title="Open IC3 portal"
-                        aria-label="Open IC3 portal"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="directory-item-row">
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>AARP Fraud Watch Network</div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Free helpline for seniors and families</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
-                        1-877-908-3360
-                      </span>
-                      <a
-                        href="tel:18779083360"
-                        className="directory-call-btn"
-                        title="Call AARP Fraud Helpline"
-                        aria-label="Call AARP Fraud Helpline"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">call</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="directory-item-row">
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>National Cyber Crime Portal (India)</div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Financial fraud reporting helpline: 1930</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
                         cybercrime.gov.in
                       </span>
                       <a
@@ -684,12 +586,193 @@ export default function SafetyGuideView() {
                       </a>
                     </div>
                   </div>
+
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>Chakshu (Sanchar Saathi - DoT)</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Report suspect calls, fake SMS &amp; WhatsApp fraud</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--teal-secondary)' }}>
+                        sancharsaathi.gov.in
+                      </span>
+                      <a
+                        href="https://sancharsaathi.gov.in/sfc/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="directory-call-btn"
+                        title="Open Chakshu Fraud Reporting Portal"
+                        aria-label="Open Chakshu Fraud Reporting Portal"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>RBI Sachet Portal (Reserve Bank of India)</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>Report illegal financial entities and apps</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--teal-secondary)' }}>
+                        sachet.rbi.org.in
+                      </span>
+                      <a
+                        href="https://sachet.rbi.org.in"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="directory-call-btn"
+                        title="Open RBI Sachet Portal"
+                        aria-label="Open RBI Sachet Portal"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '16px', padding: '10px 14px', background: 'var(--surface-low)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
+                <span style={{ color: 'var(--ink-secondary)' }}>All-India Emergency Police Dispatch:</span>
+                <span style={{ color: 'var(--forest-primary)', fontWeight: 700 }}>Dial 112</span>
+              </div>
+            </div>
+
+            {/* Primary: Major Indian Banking Fraud Desks */}
+            <div className="directory-hub-card">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--surface-high)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--forest-primary)',
+                  }}>
+                    <span className="material-symbols-outlined text-[24px]">account_balance</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
+                      Major Indian Banking Fraud Desks
+                    </h3>
+                    <p style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>Official toll-free fraud escalation helplines (24/7)</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { bank: 'State Bank of India (SBI)', dept: 'Toll-free Fraud & Card Block', phone: '1800 11 2211', tel: '1800112211', note: 'SMS BLOCK to 567676' },
+                    { bank: 'HDFC Bank', dept: 'Dedicated 24x7 Fraud Desk', phone: '1800 1600 / 2600', tel: '18001600', note: 'Toll-free' },
+                    { bank: 'ICICI Bank', dept: '24x7 Customer Fraud Helpline', phone: '1800 1080', tel: '18001080', note: 'Toll-free' },
+                    { bank: 'Axis Bank', dept: 'Emergency Card & UPI Block', phone: '1800 419 5959', tel: '18004195959', note: 'Toll-free' },
+                    { bank: 'Punjab National Bank (PNB)', dept: '24x7 Emergency Contact Desk', phone: '1800 180 2222', tel: '18001802222', note: 'Toll-free' },
+                  ].map((b) => (
+                    <div key={b.bank} className="directory-item-row">
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--ink-primary)' }}>{b.bank}</div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--ink-secondary)' }}>{b.dept}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
+                          {b.phone}
+                        </span>
+                        <a
+                          href={`tel:${b.tel}`}
+                          className="directory-call-btn"
+                          title={`Call ${b.bank}`}
+                          aria-label={`Call ${b.bank}`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">call</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '16px', padding: '10px 14px', background: 'var(--surface-low)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
+                <span style={{ color: 'var(--ink-secondary)' }}>Regional or cooperative bank?</span>
+                <span style={{ color: 'var(--teal-secondary)', fontWeight: 600 }}>Inspect phone number on physical plastic card</span>
+              </div>
+            </div>
+
+            {/* Clearly Labeled: International & United States Resources */}
+            <div className="directory-hub-card" style={{ gridColumn: '1 / -1' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--surface-high)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--ink-secondary)',
+                  }}>
+                    <span className="material-symbols-outlined text-[20px]">public</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--forest-primary)' }}>
+                      International &amp; United States Consumer Resources (Clearly Labeled)
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Verified portals for users in the United States and international jurisdictions</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)' }}>[United States] FTC Fraud Portal</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-secondary)' }}>1-877-FTC-HELP (1-877-382-4357)</div>
+                    </div>
+                    <a href="https://reportfraud.ftc.gov" target="_blank" rel="noopener noreferrer" className="directory-call-btn" title="Open US FTC Report Fraud portal">
+                      <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    </a>
+                  </div>
+
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)' }}>[United States] FBI IC3 Portal</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-secondary)' }}>Internet Crime Complaint Center</div>
+                    </div>
+                    <a href="https://www.ic3.gov" target="_blank" rel="noopener noreferrer" className="directory-call-btn" title="Open US FBI IC3 portal">
+                      <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    </a>
+                  </div>
+
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)' }}>[United States] AARP Fraud Watch</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-secondary)' }}>Helpline: 1-877-908-3360</div>
+                    </div>
+                    <a href="tel:18779083360" className="directory-call-btn" title="Call US AARP Fraud Helpline">
+                      <span className="material-symbols-outlined text-[16px]">call</span>
+                    </a>
+                  </div>
+
+                  <div className="directory-item-row">
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)' }}>[United Kingdom] Action Fraud</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-secondary)' }}>National Fraud &amp; Cyber Reporting</div>
+                    </div>
+                    <a href="https://www.actionfraud.police.uk" target="_blank" rel="noopener noreferrer" className="directory-call-btn" title="Open UK Action Fraud portal">
+                      <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 
               {/* Dynamic resources from ScamShield API */}
               {backendResources.reporting_resources && Object.keys(backendResources.reporting_resources).length > 0 && (
-                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--ink-muted)', textTransform: 'uppercase' }}>
+                    DIRECT API RESOURCES:
+                  </span>
                   {Object.entries(backendResources.reporting_resources).map(([name, url]) => (
                     <a
                       key={name}
