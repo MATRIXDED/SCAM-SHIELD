@@ -17,20 +17,30 @@ Tests:
 import unittest
 import sys
 import os
+import tempfile
+from pathlib import Path
 
 # Ensure backend directory is always in sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from starlette.testclient import TestClient
 from main import app
-from database import init_db, get_connection
+from database import init_db, get_connection, set_db_path, get_db_path
 
 
 class ScamShieldApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls._temp_dir = tempfile.TemporaryDirectory()
+        cls._temp_db = Path(cls._temp_dir.name) / "test_api.db"
+        set_db_path(cls._temp_db)
         init_db()
         cls.client = TestClient(app)
+
+    @classmethod
+    def tearDownClass(cls):
+        set_db_path(None)
+        cls._temp_dir.cleanup()
 
     def test_01_health_check_preserved(self):
         """Verify the health check endpoint returns 200 and indicates active backend."""
@@ -196,8 +206,16 @@ class ScamShieldEdgeCaseTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._temp_dir = tempfile.TemporaryDirectory()
+        cls._temp_db = Path(cls._temp_dir.name) / "test_edge.db"
+        set_db_path(cls._temp_db)
         init_db()
         cls.client = TestClient(app)
+
+    @classmethod
+    def tearDownClass(cls):
+        set_db_path(None)
+        cls._temp_dir.cleanup()
 
     def test_13_analysis_method_field_present(self):
         """Verify response includes analysis_method transparency field."""
@@ -322,8 +340,16 @@ class ScamShieldPhase1RegressionTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._temp_dir = tempfile.TemporaryDirectory()
+        cls._temp_db = Path(cls._temp_dir.name) / "test_phase1.db"
+        set_db_path(cls._temp_db)
         init_db()
         cls.client = TestClient(app)
+
+    @classmethod
+    def tearDownClass(cls):
+        set_db_path(None)
+        cls._temp_dir.cleanup()
 
     def test_19_legitimate_otp_delivery_not_flagged_as_scam(self):
         """
@@ -482,7 +508,86 @@ class ScamShieldPhase1RegressionTests(unittest.TestCase):
         self.assertTrue(len(data["warning_signs"]) >= 2)
 
 
+class ScamShieldPhase2SecurityTests(unittest.TestCase):
+    """
+    Phase 2 Security, Privacy & Configuration Verification:
+    - Test database isolation (must not alter developer teampilot.db)
+    - CORS wildcard origin rejection under credential mode
+    - Payload size limit enforcement (HTTP 413)
+    - Keyed HMAC fingerprint stability and secrecy
+    - Unified storage history retrieval consistency
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls._temp_dir = tempfile.TemporaryDirectory()
+        cls._temp_db = Path(cls._temp_dir.name) / "test_sec.db"
+        set_db_path(cls._temp_db)
+        init_db()
+        cls.client = TestClient(app)
+
+    @classmethod
+    def tearDownClass(cls):
+        set_db_path(None)
+        cls._temp_dir.cleanup()
+
+    def test_29_test_database_is_strictly_isolated(self):
+        """Verify tests run on a temporary isolated database path, not teampilot.db."""
+        active_db = get_db_path()
+        self.assertIn("test_sec.db", str(active_db))
+        self.assertTrue(active_db.exists())
+
+    def test_30_cors_rejects_wildcard_under_credentials(self):
+        """Confirm wildcard '*' is never present when allow_credentials=True."""
+        from config import settings
+        if settings.CORS_ALLOW_CREDENTIALS:
+            self.assertNotIn("*", settings.CORS_ORIGINS,
+                "Wildcard origin '*' must be rejected when credentials are enabled")
+
+    def test_31_request_body_size_limit(self):
+        """Oversized body exceeding MAX_REQUEST_SIZE_BYTES returns HTTP 413."""
+        # Simulated payload with massive Content-Length
+        huge_headers = {"content-length": "100000"}  # > 65536 bytes
+        res = self.client.post("/api/v1/analyze", headers=huge_headers, json={"message": "Small test"})
+        self.assertEqual(res.status_code, 413)
+        data = res.json()
+        self.assertEqual(data["status"], "error")
+        self.assertEqual(data["error_type"], "PayloadTooLarge")
+
+    def test_32_hmac_fingerprint_keyed_and_stable(self):
+        """
+        Verify hash_content produces keyed HMAC-SHA256, stable for identical input,
+        different with different secrets, and never reversible to plaintext.
+        """
+        from analyzer import hash_content
+        text = "Confidential test text for hashing verification"
+        hash1 = hash_content(text, secret="key-a")
+        hash2 = hash_content(text, secret="key-a")
+        hash3 = hash_content(text, secret="key-b")
+
+        # Stable for same secret
+        self.assertEqual(hash1, hash2)
+        # 64 hex characters (256-bit hash)
+        self.assertEqual(len(hash1), 64)
+        # Different secret yields different fingerprint
+        self.assertNotEqual(hash1, hash3)
+        # Plaintext never leaks in hash
+        self.assertNotIn("Confidential", hash1)
+
+    def test_33_shared_constants_single_source_of_truth(self):
+        """Confirm /api/v1/sample-cases and /api/v1/safe-next-steps use shared_constants."""
+        from shared_constants import SAMPLE_CASES, SAFE_NEXT_STEPS_DATA
+        res_cases = self.client.get("/api/v1/sample-cases")
+        self.assertEqual(res_cases.status_code, 200)
+        self.assertEqual(len(res_cases.json()), len(SAMPLE_CASES))
+
+        res_steps = self.client.get("/api/v1/safe-next-steps")
+        self.assertEqual(res_steps.status_code, 200)
+        self.assertEqual(res_steps.json(), SAFE_NEXT_STEPS_DATA)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
