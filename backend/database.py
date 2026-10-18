@@ -21,9 +21,26 @@ from pathlib import Path
 
 # Path(__file__) is the absolute path to this file (database.py).
 # .parent gives us the directory it lives in (backend/).
-# We store the database next to the source files so it's easy to find
-# and easy to delete when resetting during development.
-DB_PATH = Path(__file__).parent / "teampilot.db"
+_DEFAULT_DB_PATH = Path(__file__).parent / "teampilot.db"
+_CONFIGURED_DB_PATH = None
+
+
+def get_db_path() -> Path:
+    """Return the currently configured SQLite database path."""
+    import os
+    if _CONFIGURED_DB_PATH is not None:
+        return _CONFIGURED_DB_PATH
+    env_path = os.environ.get("SCAMSHIELD_DB_PATH")
+    if env_path:
+        return Path(env_path)
+    return _DEFAULT_DB_PATH
+
+
+def set_db_path(path: Path | str | None) -> None:
+    """Explicitly override database path (used by test suites for isolation)."""
+    global _CONFIGURED_DB_PATH
+    _CONFIGURED_DB_PATH = Path(path) if path else None
+
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +77,7 @@ def get_connection():
             back to Python datetime objects if we ever use them.
     """
     conn = sqlite3.connect(
-        DB_PATH,
+        get_db_path(),
         detect_types=sqlite3.PARSE_DECLTYPES,
     )
     conn.row_factory = sqlite3.Row
@@ -302,12 +319,9 @@ def init_db() -> None:
     Called once at FastAPI startup (see main.py lifespan hook).
     Also called directly by tests and seed.py.
     """
-    log.info("Initializing database at %s", DB_PATH)
+    log.info("Initializing database at %s", get_db_path())
 
     with get_connection() as conn:
-        # BEGIN a transaction so all DDL succeeds or all rolls back together.
-        # If any statement fails (e.g., disk full), none of the tables exist
-        # in a half-created state.
         conn.execute("BEGIN")
         try:
             for statement in _SCHEMA_STATEMENTS:
@@ -318,11 +332,6 @@ def init_db() -> None:
             conn.execute("ROLLBACK")
             log.exception("Schema initialization failed — rolled back.")
             raise
-
-
-def get_db_path() -> Path:
-    """Return the absolute path to the database file. Used by tests."""
-    return DB_PATH
 
 
 def record_scam_scan(

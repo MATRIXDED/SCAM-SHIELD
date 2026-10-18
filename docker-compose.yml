@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  scamshield:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # This is the URL the browser uses to reach the API.
+        # Change to your domain name / reverse-proxy address.
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8000}"
+    image: scamshield:latest
+    container_name: scamshield-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      # === REQUIRED secrets — must be set in .env, NOT here ===
+      SUPABASE_URL: "${SUPABASE_URL:-}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:-}"
+      HMAC_SECRET: "${HMAC_SECRET:?HMAC_SECRET must be set in .env}"
+      # === Optional settings ===
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    # Never mount .env directly into container — secrets already in env above
+    # Uncomment to persist SQLite data across container restarts
+    # volumes:
+    #   - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

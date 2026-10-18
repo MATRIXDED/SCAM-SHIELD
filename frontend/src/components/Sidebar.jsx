@@ -56,7 +56,7 @@ export default function Sidebar({ activeTab, setActiveTab, backendStatus }) {
           <span style={{ color: 'var(--teal-secondary)', fontWeight: 600 }}>
             {backendStatus.mode === 'supabase_cloud' ? '● Supabase Cloud' : '● Local SQLite Demo'}
           </span>
-          <span style={{ opacity: 0.7 }}>Hackathon Track</span>
+          <span style={{ opacity: 0.7 }}>Privacy-First Architecture</span>
         </div>
       </div>
     </aside>

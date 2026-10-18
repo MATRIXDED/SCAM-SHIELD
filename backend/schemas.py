@@ -65,6 +65,9 @@ class ScamAnalyzeResponse(BaseModel):
     disclaimer: str
     prompt_injection_detected: bool
     links_found: int
+    # New fields (v2): method transparency and timestamp
+    analysis_method: Optional[str] = None
+    analyzed_at: Optional[str] = None
 
 
 class HistoryItem(BaseModel):
