@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:8000';
+import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../config';
 
 export default function SafetyGuideView() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,13 +10,8 @@ export default function SafetyGuideView() {
     general_checklist: [],
     reporting_resources: {},
   });
-  const [loadingResources, setLoadingResources] = useState(true);
 
-  useEffect(() => {
-    fetchSafetyResources();
-  }, []);
-
-  const fetchSafetyResources = async () => {
+  const fetchSafetyResources = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/safe-next-steps`);
       if (res.ok) {
@@ -26,10 +20,12 @@ export default function SafetyGuideView() {
       }
     } catch {
       // Offline fallback
-    } finally {
-      setLoadingResources(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchSafetyResources();
+  }, [fetchSafetyResources]);
 
   const principles = [
     {

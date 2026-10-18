@@ -10,6 +10,8 @@ export default function ScanMessageView({
   loading,
   result,
   error,
+  canRunOffline,
+  onRunOffline,
   onClear,
 }) {
   const [copiedChecklist, setCopiedChecklist] = useState(false);
@@ -158,16 +160,37 @@ export default function ScanMessageView({
               background: 'var(--risk-high-bg)',
               border: '1px solid var(--risk-high-border)',
               color: 'var(--risk-high-ink)',
-              padding: '12px 16px',
+              padding: '14px 16px',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.85rem',
               marginBottom: '16px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
+              flexDirection: 'column',
+              gap: '10px'
             }}>
-              <span className="material-symbols-outlined text-[18px]">error</span>
-              <span>{error}</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{error}</span>
+              </div>
+              {canRunOffline && onRunOffline && (
+                <button
+                  type="button"
+                  className="btn-forest-secondary"
+                  style={{
+                    fontSize: '0.82rem',
+                    padding: '8px 14px',
+                    alignSelf: 'flex-start',
+                    background: '#ffffff',
+                    border: '1px solid var(--risk-high-border)',
+                    color: 'var(--risk-high-ink)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={onRunOffline}
+                >
+                  <span className="material-symbols-outlined text-[16px]">offline_bolt</span>
+                  <span>Run Offline Analysis (Browser Heuristics Only)</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -204,7 +227,7 @@ export default function ScanMessageView({
         </div>
 
         {/* Right Column: Diagnostic & Risk Results */}
-        <div className="trust-card">
+        <div className="trust-card" aria-live="polite" aria-atomic="true">
           {!result && !loading && (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-muted)' }}>
               <div style={{
@@ -248,6 +271,26 @@ export default function ScanMessageView({
 
           {result && !loading && (
             <div>
+              {/* Explicit Offline Simulation Warning */}
+              {result.is_offline_simulation && (
+                <div style={{
+                  background: 'var(--risk-med-bg)',
+                  border: '1px solid var(--risk-med-border)',
+                  color: 'var(--risk-med-ink)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span className="material-symbols-outlined text-[18px]">cloud_off</span>
+                  <span>OFFLINE BROWSER SIMULATION: Results evaluated locally using basic browser heuristics without backend threat intelligence or server-grade normalization.</span>
+                </div>
+              )}
+
               {/* Risk Banner */}
               <div className={`risk-result-banner ${
                 result.risk_level.startsWith('HIGH') ? 'high' :
