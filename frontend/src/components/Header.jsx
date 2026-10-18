@@ -1,8 +1,8 @@
 import React from 'react';
 
-export default function Header({ activeTab, backendStatus }) {
+export default function Header({ activeTab, setActiveTab, backendStatus }) {
   const tabTitles = {
-    scan: 'Message Inspection',
+    scan: 'Safety Inspection',
     history: 'Recent Checks',
     family: 'Family Safety',
     guide: 'Safety Guide',
@@ -19,7 +19,7 @@ export default function Header({ activeTab, backendStatus }) {
         </div>
         <span className="prototype-pill">
           <span className="material-symbols-outlined text-[14px]">info</span>
-          Prototype Track
+          Prototype — Simulated Data Only
         </span>
       </div>
 
@@ -29,15 +29,48 @@ export default function Header({ activeTab, backendStatus }) {
           <span>{backendStatus.supabase_configured ? 'Supabase Cloud' : 'Local SQLite Demo'}</span>
         </div>
 
+        {setActiveTab && (
+          <button
+            type="button"
+            className="btn-forest-secondary"
+            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-md)' }}
+            onClick={() => setActiveTab('guide')}
+            title="Read foundational defense principles and recovery steps"
+          >
+            <span className="material-symbols-outlined text-[16px]" style={{ color: 'var(--teal-secondary)' }}>
+              visibility
+            </span>
+            <span>How this check works</span>
+          </button>
+        )}
+
         <a
           href="tel:18773824357"
           className="helpline-link"
-          title="Direct consumer hotline for FTC fraud reporting"
+          title="Direct verified consumer helpline: FTC Fraud Desk 1-877-382-4357"
         >
           <span className="material-symbols-outlined text-[16px]">call</span>
           <span>1-877-FTC-HELP</span>
         </a>
+
+        <div
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            background: 'var(--forest-primary)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: '4px',
+          }}
+          aria-hidden="true"
+        >
+          <span className="material-symbols-outlined text-[18px]">person</span>
+        </div>
       </div>
     </header>
   );
 }
+

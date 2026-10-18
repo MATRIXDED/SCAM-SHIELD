@@ -133,15 +133,21 @@ export default function App() {
 
   // Poll system diagnostics & initial data on mount
   useEffect(() => {
-    fetchStatus();
-    fetchSamplePresets();
-    fetchHistory();
+    const init = async () => {
+      await fetchStatus();
+      await fetchSamplePresets();
+      await fetchHistory();
+    };
+    init();
   }, [fetchStatus, fetchSamplePresets, fetchHistory]);
 
   // When switching to history view, refresh automatically
   useEffect(() => {
     if (activeTab === 'history') {
-      fetchHistory();
+      const load = async () => {
+        await fetchHistory();
+      };
+      load();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab, fetchHistory]);
@@ -271,6 +277,7 @@ export default function App() {
       <div className="app-main-content">
         <Header
           activeTab={activeTab}
+          setActiveTab={setActiveTab}
           backendStatus={backendStatus}
         />
 
