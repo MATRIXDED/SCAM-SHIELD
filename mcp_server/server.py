@@ -36,6 +36,7 @@ Usage:
   Streamable HTTP transport (what Alexa+ / network agents use):
     python mcp_server/server.py --http --host 0.0.0.0 --port 8001
     -> MCP endpoint: http://<host>:8001/mcp   health: http://<host>:8001/health
+    -> Alexa+-style simulator UI: http://<host>:8001/simulator
 """
 
 import sys
@@ -261,6 +262,19 @@ def create_mcp_server():
                 "server": "scamshield-mcp-server",
                 "tools": [t["name"] for t in ALL_TOOLS_MANIFEST],
             })
+
+        from starlette.responses import HTMLResponse
+
+        _SIM_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "simulator", "index.html")
+
+        @mcp_app.custom_route("/simulator", methods=["GET"])
+        async def simulator(_request):  # noqa: ANN001
+            """Alexa+-style demo UI. Same origin as /mcp, so the browser speaks real MCP without CORS."""
+            try:
+                with open(_SIM_PATH, "r", encoding="utf-8") as fh:
+                    return HTMLResponse(fh.read())
+            except OSError:
+                return HTMLResponse("simulator/index.html not found", status_code=404)
 
         return mcp_app
     except ImportError:

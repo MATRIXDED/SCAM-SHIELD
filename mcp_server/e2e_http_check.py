@@ -122,6 +122,10 @@ def main() -> None:
     try:
         base = f"http://127.0.0.1:{port}"
         health = _wait_health(f"{base}/health")
+        print("health:", health["status"], f"({len(health['tools'])} tools)")
+        with urllib.request.urlopen(f"{base}/simulator", timeout=5) as r:
+            page = r.read().decode("utf-8")
+        check(r.status == 200 and "ScamShield" in page and "/mcp" in page, "simulator page served at /simulator")
         asyncio.run(run(base))
         print("\nE2E HTTP CHECK PASSED")
     finally:

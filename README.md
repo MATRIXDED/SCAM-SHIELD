@@ -290,6 +290,17 @@ python mcp_server/e2e_http_check.py
 
 Or with Docker: `docker compose up --build mcp`.
 
+### Alexa+-style simulator
+
+With the HTTP server running, open **http://localhost:8001/simulator**. It is a smart-speaker-with-screen
+simulation that speaks real MCP (Streamable HTTP) to `/mcp` from the browser, so every card on screen comes
+from an actual tool call, shown live in the wire log beside it. **Run full demo** plays the whole flow:
+suspicious SMS (with repeat detection) → live scam-call coach → confirm-gated family alert → report pack.
+You can also run each step by hand, edit the SMS, and answer the coach with the buttons or the Y / N keys.
+Tick "speak replies" to hear the `voice_summary` text read aloud.
+
+It is a simulation of the Alexa+ experience, not a published Amazon skill.
+
 ### Family alerts are honest
 
 Set `SCAMSHIELD_WEBHOOK_URL` (Slack/Discord-style webhook) to deliver alerts. If it is not set, the alert is
