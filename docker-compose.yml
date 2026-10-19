@@ -19,6 +19,7 @@ services:
       SUPABASE_URL: "${SUPABASE_URL:-}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:-}"
       HMAC_SECRET: "${HMAC_SECRET:?HMAC_SECRET must be set in .env}"
+      SCAMSHIELD_HMAC_SECRET: "${HMAC_SECRET}"
       # === Optional settings ===
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
@@ -32,3 +33,30 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    image: scamshield-mcp:latest
+    container_name: scamshield-mcp
+    restart: unless-stopped
+    ports:
+      - "${MCP_PORT:-8001}:8001"
+    environment:
+      HMAC_SECRET: "${HMAC_SECRET:?HMAC_SECRET must be set in .env}"
+      SCAMSHIELD_HMAC_SECRET: "${HMAC_SECRET}"
+      SCAMSHIELD_CASES_DB: "/app/data/cases.db"
+      SCAMSHIELD_WEBHOOK_URL: "${SCAMSHIELD_WEBHOOK_URL:-}"
+      MCP_ALLOWED_HOSTS: "${MCP_ALLOWED_HOSTS:-}"
+    volumes:
+      - scamshield-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  scamshield-data:

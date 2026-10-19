@@ -35,7 +35,13 @@ _DEFAULT_HMAC_SECRET = "scamshield-telemetry-isolation-key-v1"
 
 def get_hmac_secret() -> str:
     """Retrieve HMAC secret key from environment or use default."""
-    return os.environ.get("SCAMSHIELD_HMAC_SECRET", "").strip() or _DEFAULT_HMAC_SECRET
+    # README/docker-compose/CI document HMAC_SECRET; accept it as well so following the docs
+    # never silently falls back to the public default key.
+    return (
+        os.environ.get("SCAMSHIELD_HMAC_SECRET", "").strip()
+        or os.environ.get("HMAC_SECRET", "").strip()
+        or _DEFAULT_HMAC_SECRET
+    )
 
 
 def hash_content(text: str, secret: Optional[str] = None) -> str:

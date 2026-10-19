@@ -1,0 +1,23 @@
+# ScamShield MCP server (Streamable HTTP) — what Alexa+ / network agents connect to.
+FROM python:3.11-slim
+
+RUN groupadd -r scamshield && useradd -r -g scamshield -d /app -s /sbin/nologin scamshield
+WORKDIR /app
+
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./backend/
+COPY mcp_server/ ./mcp_server/
+
+# Persistent case store lives here (mount a volume in production)
+RUN mkdir -p /app/data && chown -R scamshield:scamshield /app/data
+ENV SCAMSHIELD_CASES_DB=/app/data/cases.db
+USER scamshield
+
+EXPOSE 8001
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')" || exit 1
+
+# PORT is honoured by hosting platforms; default 8001
+CMD ["python", "mcp_server/server.py", "--http", "--host", "0.0.0.0"]

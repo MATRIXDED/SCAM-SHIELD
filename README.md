@@ -2,7 +2,7 @@
 
 > **Heuristic scam-message inspection engine** — an explainable, privacy-first tool for detecting urgency manipulation, brand impersonation, OTP harvesting, and financial-fraud patterns across SMS, email, and payment notifications.
 
-[![CI](https://github.com/YOUR_ORG/teampilot/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/teampilot/actions/workflows/ci.yml)
+[![CI](https://github.com/MATRIXDED/SCAM-SHIELD/actions/workflows/ci.yml/badge.svg)](https://github.com/MATRIXDED/SCAM-SHIELD/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -122,8 +122,14 @@ Open [http://localhost:5173](http://localhost:5173).
 # Backend unit tests (38 tests, isolated temp DB)
 python -m unittest backend/test_scamshield.py -v
 
-# MCP server self-test (6 assertions)
+# MCP server self-test (protocol assertions)
 python mcp_server/server.py --test
+
+# Incident-tool unit tests (13 tests, isolated temp DB)
+python -m unittest mcp_server/test_incident.py -v
+
+# End-to-end: boots the real Streamable HTTP server and drives it with the official MCP client
+python mcp_server/e2e_http_check.py
 
 # Benchmark evaluation (26 labeled cases)
 python evaluation/evaluate.py --verbose
@@ -155,7 +161,10 @@ VITE_API_BASE_URL=http://localhost:8000 docker compose up --build
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `HMAC_SECRET` | **Yes** | — | 32+ char secret for HMAC-SHA256 message fingerprinting |
+| `SCAMSHIELD_HMAC_SECRET` (or `HMAC_SECRET`) | **Yes** | — | 32+ char secret for HMAC-SHA256 message fingerprinting. Without it a public default key is used — always set it. |
+| `SCAMSHIELD_CASES_DB` | No | `data/cases.db` | SQLite file for persistent scam cases |
+| `SCAMSHIELD_WEBHOOK_URL` | No | — | Webhook for family alerts |
+| `MCP_ALLOWED_HOSTS` | No | — | Comma-separated public hostnames for the MCP server |
 | `SUPABASE_URL` | No | `""` | Supabase project URL. If empty, SQLite is used. |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | `""` | Service-role key — **server-side only, never expose to browser** |
 | `CORS_ORIGINS` | No | `http://localhost:5173` | Comma-separated list of allowed browser origins |
@@ -237,29 +246,63 @@ Rate limit: 60 requests / minute per IP. Exceeding returns `HTTP 429`.
 
 ## MCP Server (Alexa+ / AI Assistant)
 
-The `mcp_server/server.py` implements the [Model Context Protocol (MCP)](https://spec.modelcontextprotocol.io/) using the official Python MCP SDK (`mcp>=2.3.0`).
+`mcp_server/server.py` is a self-hosted MCP server built on the official Python MCP SDK (`mcp>=2.3.0`)
+and served over **Streamable HTTP** (the SDK negotiates protocol `2026-07-28`; the Alexa+ track minimum is `2025-11-25`).
 
-> **Current status: Simulation / Development mode.** This server uses stdio transport and has been validated against MCP protocol v2024-11-05. Integration with a live Amazon Alexa+ skill or Google assistant requires additional OAuth, skill hosting, and account-linking configuration not included in this repository.
+ScamShield is a **scam incident-response workflow**, not a one-shot classifier. A case persists across
+sessions, so Alexa+ can follow an incident from the first suspicious message to a family alert to an official report.
 
-### Tools exposed
-
-| Tool | Description |
-|------|-------------|
-| `analyze_suspicious_message` | Runs the ScamShield heuristic engine and returns voice-safe summary |
-| `get_safe_next_steps` | Returns emergency guidance and official reporting portals |
-| `get_sample_threat_cases` | Returns labeled sample threat cases for testing |
-
-### Run locally
-
-```bash
-# Self-test (6 protocol assertions)
-python mcp_server/server.py --test
-
-# Stdio mode (for MCP client integration)
-python mcp_server/server.py
+```
+open_scam_case → add_evidence → start_live_call_coach / answer_coach_question
+              → notify_family (preview → confirm) → build_report_pack
 ```
 
----
+### Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| `analyze_suspicious_message` | One-shot heuristic analysis with a voice-safe summary |
+| `get_safe_next_steps` | Emergency guidance and official reporting portals |
+| `get_sample_threat_cases` | Labeled sample threats for testing |
+| `open_scam_case` | Start a persistent case for a family |
+| `add_evidence` | Analyze a message and attach the *result* (never the text) to the case; detects the same scam repeating across the family |
+| `start_live_call_coach` / `answer_coach_question` | Yes/no coaching for a suspicious call happening right now (India "digital arrest"-style scams). Risk builds across turns and ends with a safe script |
+| `notify_family` | Two-step alert: first call previews, second call with `confirm=true` sends |
+| `build_report_pack` | Complaint summary, evidence checklist, and India reporting steps |
+
+Every result includes a `voice_summary` (never reads codes aloud, never says "100% safe") and, where useful,
+a `card` object for screen devices.
+
+### Run it
+
+```
+pip install -r backend/requirements.txt
+
+# Streamable HTTP  ->  http://localhost:8001/mcp   (health: /health)
+python mcp_server/server.py --http --port 8001
+
+# stdio (desktop MCP clients)
+python mcp_server/server.py
+
+# Prove it works end-to-end with the official MCP client
+python mcp_server/e2e_http_check.py
+```
+
+Or with Docker: `docker compose up --build mcp`.
+
+### Family alerts are honest
+
+Set `SCAMSHIELD_WEBHOOK_URL` (Slack/Discord-style webhook) to deliver alerts. If it is not set, the alert is
+saved to a local outbox and the tool says plainly that it was **not delivered** — it never claims a delivery
+that did not happen.
+
+### Deploying behind a public hostname
+
+Set `MCP_ALLOWED_HOSTS=your-app.example.com` so the SDK's DNS-rebinding protection accepts your host header.
+State is stored in SQLite at `SCAMSHIELD_CASES_DB` (default `data/cases.db`); mount a volume to keep it.
+
+> **Status:** the server is real MCP over HTTP. It has not been registered with a live Alexa+ account;
+> the demo drives it with the official MCP client and a simulated Alexa+ experience.
 
 ## Evaluation & Benchmarks
 
@@ -293,7 +336,9 @@ Metrics reported: **Accuracy, Precision, Recall, F1 Score, FPR, FNR** — comput
 | Heuristic-only detection — no ML model | By design; keeps it interpretable and offline-capable |
 | No live domain reputation lookup | Would require external API integration (VirusTotal, Google Safe Browsing) |
 | No image/attachment scanning | Text-only analysis |
-| Alexa+ skill not live | Simulation mode only; not deployed to Amazon skill store |
+| Not registered with a live Alexa+ account | Real MCP-over-HTTP server, demonstrated through the official MCP client and a simulated experience |
+| Family alert delivery needs a webhook | Without `SCAMSHIELD_WEBHOOK_URL` alerts are queued locally and reported as not delivered |
+| Live-call coach is a fixed question set | Deterministic and explainable, but only covers common call-scam patterns |
 | OTP theft detection limited to English patterns | Non-English scam patterns partially covered via transliteration |
 | 26-case benchmark is small | Expand `evaluation/benchmark_dataset.json` with more diverse cases |
 | SQLite not suitable for multi-worker production | Use Supabase PostgreSQL for production horizontal scaling |

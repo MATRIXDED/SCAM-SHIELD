@@ -33,8 +33,9 @@ Usage:
   Stdio transport (Claude Desktop / Agent tool calling):
     python mcp_server/server.py
 
-  Streamable HTTP transport (Network agents):
-    python mcp_server/server.py --http --port 8001
+  Streamable HTTP transport (what Alexa+ / network agents use):
+    python mcp_server/server.py --http --host 0.0.0.0 --port 8001
+    -> MCP endpoint: http://<host>:8001/mcp   health: http://<host>:8001/health
 """
 
 import sys
@@ -42,10 +43,12 @@ import json
 import os
 import re
 import asyncio
+import argparse
 from typing import Dict, Any, List, Optional
 
-# Ensure backend modules can be imported
+# Ensure backend modules (and this folder) can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 try:
     from analyzer import analyze_message
@@ -54,12 +57,17 @@ except ImportError:
     from backend.analyzer import analyze_message
     from backend.shared_constants import SAMPLE_CASES, SAFE_NEXT_STEPS_DATA, MCP_TOOLS_MANIFEST
 
+import incident  # stateful scam-incident tools (cases, live-call coach, family alert, report pack)
+
 # MCP Protocol Version Negotiation Constants
 try:
     from mcp.types import LATEST_PROTOCOL_VERSION, DEFAULT_NEGOTIATED_VERSION
 except ImportError:
     LATEST_PROTOCOL_VERSION = "2026-07-28"
     DEFAULT_NEGOTIATED_VERSION = "2025-03-26"
+
+
+ALL_TOOLS_MANIFEST = list(MCP_TOOLS_MANIFEST) + list(incident.INCIDENT_MANIFEST)
 
 
 def build_voice_summary(result: Dict[str, Any]) -> str:
@@ -164,11 +172,18 @@ def execute_tool(name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         return handle_get_safe_next_steps(arguments)
     elif name == "get_sample_threat_cases":
         return handle_get_sample_cases(arguments)
+    elif name in incident.INCIDENT_HANDLERS:
+        return incident.INCIDENT_HANDLERS[name](arguments)
     else:
-        raise ValueError(f"Unknown MCP tool requested: '{name}'. Supported tools: {[t['name'] for t in MCP_TOOLS_MANIFEST]}")
+        supported = [t["name"] for t in ALL_TOOLS_MANIFEST]
+        raise ValueError(f"Unknown MCP tool requested: '{name}'. Supported tools: {supported}")
 
 
 # ── Official MCP SDK Server Integration ───────────────────────────────────────
+
+def _desc(tool_name: str) -> str:
+    return next(t["description"] for t in incident.INCIDENT_MANIFEST if t["name"] == tool_name)
+
 
 def create_mcp_server():
     """Create and configure MCPServer instance from official python MCP SDK."""
@@ -208,6 +223,45 @@ def create_mcp_server():
             res = handle_get_sample_cases({"category": category or ""})
             return json.dumps(res, indent=2)
 
+        # ── Stateful incident-response tools (typed so the SDK publishes exact JSON schemas) ──
+        @mcp_app.tool(name="open_scam_case", description=_desc("open_scam_case"))
+        def tool_open_case(family_id: str = "default", title: str = "Suspicious contact") -> Dict[str, Any]:
+            return incident.handle_open_case({"family_id": family_id, "title": title})
+
+        @mcp_app.tool(name="add_evidence", description=_desc("add_evidence"))
+        def tool_add_evidence(case_id: str, message: str, channel: str = "sms") -> Dict[str, Any]:
+            return incident.handle_add_evidence({"case_id": case_id, "message": message, "channel": channel})
+
+        @mcp_app.tool(name="start_live_call_coach", description=_desc("start_live_call_coach"))
+        def tool_start_coach(family_id: str = "default", case_id: Optional[str] = None) -> Dict[str, Any]:
+            return incident.handle_start_coach({"family_id": family_id, "case_id": case_id})
+
+        @mcp_app.tool(name="answer_coach_question", description=_desc("answer_coach_question"))
+        def tool_answer_coach(case_id: str, question_id: str, answer: bool) -> Dict[str, Any]:
+            return incident.handle_answer_coach({"case_id": case_id, "question_id": question_id, "answer": answer})
+
+        @mcp_app.tool(name="get_scam_case", description=_desc("get_scam_case"))
+        def tool_get_case(case_id: str) -> Dict[str, Any]:
+            return incident.handle_get_case({"case_id": case_id})
+
+        @mcp_app.tool(name="notify_family", description=_desc("notify_family"))
+        def tool_notify_family(case_id: str, note: str = "", confirm: bool = False) -> Dict[str, Any]:
+            return incident.handle_notify_family({"case_id": case_id, "note": note, "confirm": confirm})
+
+        @mcp_app.tool(name="build_report_pack", description=_desc("build_report_pack"))
+        def tool_report_pack(case_id: str) -> Dict[str, Any]:
+            return incident.handle_report_pack({"case_id": case_id})
+
+        from starlette.responses import JSONResponse
+
+        @mcp_app.custom_route("/health", methods=["GET"])
+        async def health(_request):  # noqa: ANN001
+            return JSONResponse({
+                "status": "ok",
+                "server": "scamshield-mcp-server",
+                "tools": [t["name"] for t in ALL_TOOLS_MANIFEST],
+            })
+
         return mcp_app
     except ImportError:
         return None
@@ -228,7 +282,7 @@ def process_json_rpc(request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     params = request.get("params", {})
 
     # Handle notifications (requests without an ID expect NO response)
-    if rpc_id is None and (method.startswith("notifications/") or method == "initialized"):
+    if rpc_id is None and isinstance(method, str) and (method.startswith("notifications/") or method == "initialized"):
         return None
 
     if method == "initialize":
@@ -271,7 +325,7 @@ def process_json_rpc(request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             "jsonrpc": "2.0",
             "id": rpc_id,
             "result": {
-                "tools": MCP_TOOLS_MANIFEST,
+                "tools": ALL_TOOLS_MANIFEST,
             },
         }
 
@@ -428,8 +482,40 @@ def run_cli_test():
     print("=" * 70)
 
 
-if __name__ == "__main__":
-    if "--test" in sys.argv:
+def run_http_server(host: str, port: int) -> None:
+    """Run the official-SDK MCP server over Streamable HTTP (endpoint: /mcp)."""
+    mcp_app = create_mcp_server()
+    if mcp_app is None:
+        sys.exit("The official MCP SDK is required for HTTP mode: pip install 'mcp>=2.3.0'")
+
+    security = None
+    allowed = [h.strip() for h in os.environ.get("MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    if allowed:
+        # Needed when deployed behind a public hostname (DNS-rebinding protection checks Host).
+        from mcp.server.transport_security import TransportSecuritySettings
+        security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=allowed,
+            allowed_origins=[f"https://{h}" for h in allowed] + [f"http://{h}" for h in allowed],
+        )
+    print(f"ScamShield MCP (Streamable HTTP) listening on http://{host}:{port}/mcp", file=sys.stderr)
+    asyncio.run(mcp_app.run_streamable_http_async(host=host, port=port, transport_security=security))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="ScamShield MCP server")
+    parser.add_argument("--test", action="store_true", help="run the protocol self-test")
+    parser.add_argument("--http", action="store_true", help="serve Streamable HTTP at /mcp")
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8001")))
+    args = parser.parse_args()
+    if args.test:
         run_cli_test()
+    elif args.http:
+        run_http_server(args.host, args.port)
     else:
         run_stdio_server()
+
+
+if __name__ == "__main__":
+    main()

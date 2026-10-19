@@ -50,6 +50,16 @@ jobs:
           HMAC_SECRET: "ci-test-secret-not-for-production"
         run: python mcp_server/server.py --test
 
+      - name: Run incident-tool unit tests
+        env:
+          HMAC_SECRET: "ci-test-secret-not-for-production"
+        run: python -m unittest mcp_server/test_incident.py -v
+
+      - name: End-to-end Streamable HTTP check (official MCP client)
+        env:
+          HMAC_SECRET: "ci-test-secret-not-for-production"
+        run: python mcp_server/e2e_http_check.py
+
   benchmark-evaluation:
     name: Benchmark Evaluation (Detection Accuracy)
     runs-on: ubuntu-latest

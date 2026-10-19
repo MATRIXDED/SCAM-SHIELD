@@ -620,13 +620,17 @@ class ScamShieldPhase3McpTests(unittest.TestCase):
         self.assertIsNone(res)
 
     def test_36_mcp_tools_list_shared_constants(self):
-        """MCP tools/list returns exactly the tools defined in shared_constants."""
+        """MCP tools/list returns the shared_constants tools plus the incident-response tools."""
         from shared_constants import MCP_TOOLS_MANIFEST
         req = {"jsonrpc": "2.0", "id": "list-1", "method": "tools/list", "params": {}}
         res = self.mcp.process_json_rpc(req)
         tools = res["result"]["tools"]
-        self.assertEqual(len(tools), len(MCP_TOOLS_MANIFEST))
+        self.assertEqual(len(tools), len(MCP_TOOLS_MANIFEST) + len(self.mcp.incident.INCIDENT_MANIFEST))
         names = [t["name"] for t in tools]
+        for incident_tool in ("open_scam_case", "add_evidence", "start_live_call_coach",
+                              "answer_coach_question", "get_scam_case", "notify_family",
+                              "build_report_pack"):
+            self.assertIn(incident_tool, names)
         self.assertIn("analyze_suspicious_message", names)
         self.assertIn("get_safe_next_steps", names)
         self.assertIn("get_sample_threat_cases", names)
